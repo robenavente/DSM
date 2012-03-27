@@ -14,11 +14,11 @@ from scipy.sparse import csc_matrix,linalg
 beta   = 4. # in km/s
 rho    = 3. # gm/cm^3 (need to account for units in source)
 r      = np.arange(0.,6372.,1.)
-l      = 75
+l      = 100
 m      = 1
 i_src  = 6321
 r_src  = r[i_src]
-print "r_src=%g" % r_src
+#print "r_src=%g" % r_src
 mu     = rho*beta*beta
 mu_src = rho*beta*beta 
 r_srf  = r[-1]
@@ -29,7 +29,7 @@ mpp    = 1.
 mtp    = 1.
 Qm     = 1000.
 tau    = 1024.
-omega  = complex(2.*math.pi/100.,1./tau)
+omega  = complex(2.*math.pi/97.,1./tau)
 
 xdsm   = complex(1.0+math.log(0.5*omega.real/math.pi)/(math.pi*Qm),-0.5/Qm);
 #xdsm   = 1.+0j
@@ -61,8 +61,8 @@ for i in range(0,len(r)):
         y_srf  = tmp[0][l]
         yp_srf = tmp[1][l]*omega/beta
 
-print j_src,  jp_src, j_srf,   jp_srf    
-print y_src,  yp_src, y_srf,   yp_srf    
+#print j_src,  jp_src, j_srf,   jp_srf    
+# y_src,  yp_src, y_srf,   yp_srf    
 
 
 
@@ -72,11 +72,11 @@ b2 = math.sqrt((2*l+1)*(l-1)*(l+2)/(64.*math.pi))
 dW = 0.+0.j
 if (abs(m) == 1):
     dW = b1*complex(m*mrp,mrt)/(r_src*r_src*mu_src)
-    print "dW = (%g,%g)" % (dW.real,dW.imag)
+    #print "dW = (%g,%g)" % (dW.real,dW.imag)
 dTw = 0.+0.j
 if (abs(m) == 2):
     dTw = b2*complex(-2*mtp,math.copysign(mpp-mtt,m))/r_src
-    print "dTw = (%g,%g)" % (dTw.real,dTw.imag)
+    #print "dTw = (%g,%g)" % (dTw.real,dTw.imag)
     
 # Linear system for boundary conditions at source depth adn surface
 #              below source     above source
@@ -102,10 +102,10 @@ W0[0:i_src] = x[0]*jn[0:i_src]
 W0[i_src:] = x[1]*jn[i_src:] + x[2]*yn[i_src:]
 
 # Print some informatoin on analytical solution
-print "W = ",x[0]*jn[i_src],x[1]*jn[i_src]+x[2]*yn[i_src]
-print "Tsrf=",mu*(W0[len(r)-1]-W0[len(r)-2] - W0[len(r)-1]/r_srf)
-print "delta(W) = ",W0[i_src]-W0[i_src-1]
-print "delta(Tw) = ",mu_src*(W0[i_src+1]-2.*W0[i_src]+W0[i_src-1])
+#print "W = ",x[0]*jn[i_src],x[1]*jn[i_src]+x[2]*yn[i_src]
+#print "Tsrf=",mu*(W0[len(r)-1]-W0[len(r)-2] - W0[len(r)-1]/r_srf)
+#print "delta(W) = ",W0[i_src]-W0[i_src-1]
+#print "delta(Tw) = ",mu_src*(W0[i_src+1]-2.*W0[i_src]+W0[i_src-1])
 #,W0[i_src+1]-W0[i_src],x[1]*jp_src+x[2]*yp_src,W0[i_src]-W0[i_src-1],x[0]*jp_src
 #print jn[i_src]-jn[i_src-1], jp_src,yn[i_src+1]-yn[i_src], yp_src,
 
@@ -170,82 +170,7 @@ def Imats(rg,i_src):
         j = j+1
         
     return (I0,I1,I2a,I2b,I3,J0,J1,J2a,J2b,J3) 
-#def Imats(rg,i_src):
-#
-#    n   = len(rg)
-#    flag = rg[0] == 0.
-#    if flag: 
-#        n = len(rg)-1                
-#    
-#    A = range(0,n)
-#    B = range(1,n)
-#    C = range(0,n-1) 
-#    I0  = np.zeros((2,n))
-#    I1  = np.zeros((2,n))
-#    I2a = np.zeros((2,n))
-#    I2b = np.zeros((2,n))
-#    I3  = np.zeros((2,n))
-#    r_0 = rg[:-1]
-#    r_1 = rg[1:]
-#    DR  = r_1-r_0
-#	    
-#
-#	  
-#    if flag: 
-#            I0[1][A]   =  DR[A]*(DR[A]*(DR[A]*0.2 + r_0[A]*0.5) +r_0[A]*r_0[A]/3.)
-#            I0[1][C]  +=  DR[B]*(DR[B]*(DR[B]*0.2 - r_1[B]*0.5) +r_1[B]*r_1[B]/3.)
-#            I0[0][B]   =  DR[B]*(DR[B]*DR[B]*0.05 + r_0[B]*r_1[B]/6.)
-#            #J0 = DR[i_src]*(DR[i_src]*(DR[i_src]*0.2 - r_1[i_src]*0.5) +r_1[i_src]**2/3.)
-#            I1[1][A]   =  DR[A]/3. 
-#            I1[1][C]  +=  DR[B]/3.
-#            I1[0][B]   =  DR[B]/6.
-#            #J1 = DR[i_src]/3.
-#            I2a[1][A]  =  (r_0[A] + 2.*r_1[A])/6.
-#            I2a[1][C] -=  (r_1[B] + 2.*r_0[B])/6.
-#            I2a[0][B]  = -(r_0[B] + 2.*r_1[B])/6.               
-#            #J2a = -(r_1[i_src] + 2.*r_0[i_src])/6.
-#            I2b[1][A]  =  (r_0[A] + 2.*r_1[A])/6.
-#            I2b[1][C] -=  (r_1[B] + 2.*r_0[B])/6.
-#            I2b[0][B]  =  (r_1[B] + 2.*r_0[B])/6.                    
-#            #J2b = -(r_1[i_src] + 2.*r_0[i_src])/6.
-#            I3[1][A]   =  (r_1[A]*r_1[A] + r_1[A]*r_0[A] + r_0[A]*r_0[A])/(DR[A]*3.) 
-#            I3[1][C]  +=  (r_1[B]*r_1[B] + r_1[B]*r_0[B] + r_0[B]*r_0[B])/(DR[B]*3.)
-#            I3[0][B]   = -(r_1[B]*r_1[B] + r_1[B]*r_0[B] + r_0[B]*r_0[B])/(DR[B]*3.)
-#            #J3 = (r_1[i_src]*r_1[i_src] + r_1[i_src]*r_0[i_src] + r_0[i_src]*r_0[i_src])/(DR[i_src]*3.)
-#            
-#            
-#        
-#              
-#    else:
-#            I0[1][B]   =  DR[C]*(DR[C]*(DR[C]*0.2 + r_0[C]*0.5) +r_0[C]*r_0[C]/3.)
-#            I0[1][C]  +=  DR[C]*(DR[C]*(DR[C]*0.2 - r_1[C]*0.5) +r_1[C]*r_1[C]/3.)
-#            I0[0][B]   =  DR[C]*(DR[C]*DR[C]*0.05 + r_0[C]*r_1[C]/6.)
-#            #J0 = 0.	
-#            I1[1][B]   =  DR[C]/3. 
-#            I1[1][C]  +=  DR[C]/3.
-#            I1[0][B]   =  DR[C]/6.
-#            #J1 = 0.
-#            I2a[1][B]  =  (r_0[C] + 2.*r_1[C])/6.
-#            I2a[1][C] -=  (r_1[C] + 2.*r_0[C])/6.
-#            I2a[0][B]  = -(r_0[C] + 2.*r_1[C])/6.               
-#            #J2a = 0.
-#            I2b[1][B]  =  (r_0[C] + 2.*r_1[C])/6.
-#            I2b[1][C] -=  (r_1[C] + 2.*r_0[C])/6.
-#            I2b[0][B]  =  (r_1[C] + 2.*r_0[C])/6.                    
-#            #J2b = 0.
-#            I3[1][B]   =  (r_1[C]*r_1[C] + r_1[C]*r_0[C] + r_0[C]*r_0[C])/(DR[C]*3.) 
-#            I3[1][C]  +=  (r_1[C]*r_1[C] + r_1[C]*r_0[C] + r_0[C]*r_0[C])/(DR[C]*3.)
-#            I3[0][B]   = -(r_1[C]*r_1[C] + r_1[C]*r_0[C] + r_0[C]*r_0[C])/(DR[C]*3.)
-#            #J3 = 0.
-#	    
-#	    
-#    J0, J1, J2a, J2b, J3 = 0., 0., 0., 0., 0.
-#
-#
-#
-#
-#        
-#    return (I0,I1,I2a,I2b,I3,J0,J1,J2a,J2b,J3)  
+
 
 
 dr= 1.
@@ -253,49 +178,21 @@ rg = np.arange(0.,6372.,dr)
 
 for i_src in range(len(rg)-1,-1,-1):
     if r_src >= rg[i_src]: break
-print 'source radius = %g (%g)' % (rg[i_src],r_src)
+#print 'source radius = %g (%g)' % (rg[i_src],r_src)
 # Calculate elemental matrices
 (I0,I1,I2a,I2b,I3,J0,J1,J2a,J2b,J3) = Imats(rg,i_src)
 # Calculate stiffness matrix (straight from paper)
 Stiff = -(omega*omega*rho*I0 - mu*((l*(l+1)-1)*I1 -I2a - I2b + I3))
 
+
+
 # Solving via  LU factorisation
 J_src = -(omega*omega*rho*J0 - mu*((l*(l+1)-1)*J1 -J2a - J2b + J3))
+
+
 ncol = Stiff.shape[1]
-# to matlab
-nelmt = 3*ncol-2
-Stiff_data = np.zeros(nelmt,complex)
-Stiff_i   = np.zeros(nelmt,int)
-Stiff_j   = np.zeros(nelmt,int)
-j = 0
-for col in range(0,ncol):
-    Stiff_data[j] = Stiff[1][col]
-    Stiff_i[j] = col+1
-    Stiff_j[j] = col+1
-    j += 1
-    if col < ncol-1:
-        Stiff_data[j] = Stiff[0][col+1]
-        Stiff_i[j] = col+2
-        Stiff_j[j] = col+1
-        j +=1
-        Stiff_data[j] = Stiff[0][col+1]
-        Stiff_i[j] = col+1
-        Stiff_j[j] = col+2
-        j +=1
-print j,nelmt
-srfl = open('Amat_real','w')
-sifl = open('Amat_imag','w')
-ifl = open('i','w')
-jfl = open('j','w')
-for i in range(0,nelmt):
-   srfl.write('%f\n' % Stiff_data[i].real)
-   sifl.write('%f\n' % Stiff_data[i].imag)
-   ifl.write('%f\n' % Stiff_i[i]) 
-   jfl.write('%f\n' % Stiff_j[i])        
-srfl.close()
-sifl.close()
-ifl.close()
-jfl.close()
+
+
 # to csc
 Stiff_data = np.zeros((3*ncol-2),complex)
 Stiff_ij   = np.zeros((2,3*ncol-2))
@@ -315,11 +212,10 @@ for col in range(0,ncol):
         Stiff_ij[0,j] = col+1
         Stiff_ij[1,j] = col
         j += 1
-print Stiff_data.shape,Stiff_ij.shape
+#print Stiff_data.shape,Stiff_ij.shape
+#print np.shape(Stiff_ij), type(Stiff_ij)
+
 Stiff_csc = csc_matrix((Stiff_data,Stiff_ij))
-#
-
-
 #C = scipy.linalg.cholesky_banded(Stiff)
 #print C
 
@@ -336,24 +232,29 @@ g = np.zeros((ncol),complex)
 if abs(m) == 1:
     (J0,J1,J2a,J2b,J3,K0,K1,K2a,K2b,K3) = Imats(rg[i_src:],i_src)
     A = -(omega*omega*rho*J0 - mu*((l*(l+1)-1)*J1 -J2a - J2b + J3))
+    
+    #print A[0][1:6]
+    
     g[i_src-1] = J_src
+    
+    
 #-dW*(A[1][0]+A[0][1])
     for j in range (i_src,ncol-1):
-        k = j-i_src+1
-        g[j] = -dW*(A[0][k]+A[1][k]+A[0][k+1])
+         k = j-i_src+1
+         g[j] = -dW*(A[0][k]+A[1][k]+A[0][k+1])         
     g[ncol-1] = -dW*(A[1][A.shape[1]-1]+A[0][A.shape[1]-1])
 else:
     g[i_src-1] = -dTw
+    
+print g[-1]
 #x = scipy.linalg.cho_solve_banded((C,False),g)
-# Matlab
-gfl = open('g','w')
-for i in range(0,ncol):
-   gfl.write('%f\n' % g[i].real)        
-gfl.close()
 
 
 # Solve for displacement vector
 x = lu.solve(g)
+
+#print g[(abs(g) != 0)][:2]
+#print  np.shape(g)
 #x = linalg.spsolve(Stiff_csc,g)
 
 if abs(m) == 1: x[i_src-1:] += dW
@@ -363,13 +264,13 @@ if abs(m) == 1: x[i_src-1:] += dW
 # All done! print out some statistics
 
 
-print "W=",x[i_src-2],x[i_src-1]
-print len(rg)
-print "Tsrf=",mu*(x[len(rg)-2]-x[len(rg)-3] - x[len(rg)-2]/r_srf)
+#print "W=",x[i_src-2],x[i_src-1]
+#print len(rg)
+#print "Tsrf=",mu*(x[len(rg)-2]-x[len(rg)-3] - x[len(rg)-2]/r_srf)
 #for j_src in range(i_src-2,i_src+3):
 #    print Stiff[0][j_src-1]*x[j_src-2] + Stiff[1][j_src-1]*x[j_src-1]+Stiff[0][j_src]*x[j_src]
-print "delta(W) =",x[i_src-1]-x[i_src-2]
-print "delta(Tw) = ",mu_src*(x[i_src]-2.*x[i_src-1]+x[i_src-2])
+#print "delta(W) =",x[i_src-1]-x[i_src-2]
+#print "delta(Tw) = ",mu_src*(x[i_src]-2.*x[i_src-1]+x[i_src-2])
 error  = np.absolute(W0[-1]-x[-1])/np.absolute(W0[-1]) * 100.
 print error
 #pl.plot(rg[0:-1],real(x))
