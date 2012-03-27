@@ -170,13 +170,13 @@ def main():
             msgn = m/abs(m)
 
             if (m==0):
-                dU  += 2*b1/aux/(r_0**2)*mrr
-                dRu += b1/(r_0**3)*(mtt+mpp+2*lbd_0_dsm*mrr/aux)
-                dSv += b1*LL/(r_0**3)*(-mtt-mpp-mrr*lbd_0_dsm/aux)
+                dU  += 2*b1*mrr/aux/(r_0**2)
+                dRu += 2*b1*(mtt+mpp-2*lbd_0_dsm*mrr/aux)/(r_0**3)
+                dSv += b1*LL*(-mtt-mpp+2*mrr*lbd_0_dsm/aux)/(r_0**3)
             elif(abs(m)==1):
-                dV  += b1/mu_0_dsm/(r_0**2)*complex(-msgn*mrt, mrp)
+                dV  += b1*complex(-msgn*mrt, mrp)/mu_0_dsm/(r_0**2)
             elif(abs(m)==2):
-                dSv += b2/(r_0**3)*complex(mtt-mpp, -msgn*mtp)
+                dSv += -b2*complex(mtt-mpp, 2*msgn*mtp)/(r_0**3)
 
             ##### Coeff (Matrix)
            #Def  each row
@@ -300,25 +300,16 @@ def main():
             Stiffpsv_data[11*ncol-7:12*ncol-8]= Stiff3[0,1:]
 	   
            
-            Stiffpsv_csc = csc_matrix((Stiffpsv_data,Stiffpsv_ij))
-            
+            #Stiffpsv_csc = csc_matrix((Stiffpsv_data,Stiffpsv_ij)) 
             #Checking the final shape with a picture:
             #AStiffpsv_csc= Stiffpsv_csc.todense()          
-            #scipy.misc.imsave('spheroidalMatrix.png',1*(AStiffpsv_csc != 0.+0.j))
-	    
-            
-#            j=0
-#            for col in range(0,ncol):
-#                Stiffpsv_data[j] = Stiff[1][col]
-#                Stiffpsv_ij[0,j] = col
-#                Stiffpsv_ij[1,j] = col   
-            
-                             
-            
-
+            #scipy.misc.imsave('spheroidalMatrix.png',1*(AStiffpsv_csc != 0.+0.j))            
+                
         # to csc
             Stiff_data = np.zeros((3*ncol-2),complex)
             Stiff_ij   = np.zeros((2,3*ncol-2))
+                  
+            
             j = 0
             for col in range(0,ncol):
                 Stiff_data[j] = Stiff[1][col]
@@ -338,7 +329,18 @@ def main():
         #print Stiff_data.shape,Stiff_ij.shape
             Stiff_csc = csc_matrix((Stiff_data,Stiff_ij))
             
-	            #
+            #Building the full matrix:
+            #print np.shape(Stiff_ij)    
+            Stiffsh_ij = np.array([Stiff_ij[0][:]+2*ncol,Stiff_ij[1][:]+2*ncol])
+            Full_data  = np.hstack((Stiffpsv_data,Stiff_data))            
+            Full_ij    = np.hstack((Stiffpsv_ij,Stiffsh_ij))
+            Full_csc   = csc_matrix((Full_data,Full_ij)) 
+            
+            
+            #Checking the Full matrix's shape in a picture            
+            #AFull_csc= Full_csc.todense()          
+            #scipy.misc.imsave('FullMatrix.png',1*(AFull_csc != 0.+0.j))              
+               
 
         # Superlu
             lu = linalg.splu(Stiff_csc)
@@ -353,6 +355,16 @@ def main():
                 g[i_0-1] = -dTw
             x = lu.solve(g)
             if abs(m) == 1: x[i_0:] += dW
+            
+            
+            lufull =  linalg.splu(Full_csc)
+            gfull  = np.zeros((3*ncol),complex)
+            
+            
+            
+            
+            
+            
 
 
             #Compute the relative error at surface:
