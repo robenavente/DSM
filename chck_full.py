@@ -265,7 +265,7 @@ def main():
             ncol = Stiff.shape[1]
             # to csc
             Stiffpsv_data = np.zeros(7*2*ncol-12-(2*ncol-4), complex)
-            Stiffpsv_ij   = np.zeros((2,7*2*ncol-12))
+            Stiffpsv_ij   = np.zeros((2,7*2*ncol-12-(2*ncol-4)))
             # Filling the diagonal:
             Stiffpsv_ij[0,:2*ncol] = Stiffpsv_ij[1,:2*ncol]=range(0,2*ncol)   
             Stiffpsv_data[:2*ncol:2] = Stiff1[1,:]
@@ -298,8 +298,13 @@ def main():
             Stiffpsv_ij[0,11*ncol-7:12*ncol-8] = range(3,2*ncol,2)
             Stiffpsv_ij[1,11*ncol-7:12*ncol-8] = range(0,2*ncol-3,2)  
             Stiffpsv_data[11*ncol-7:12*ncol-8]= Stiff3[0,1:]
-	    
+	   
+           
             Stiffpsv_csc = csc_matrix((Stiffpsv_data,Stiffpsv_ij))
+            
+            #Checking the final shape with a picture:
+            #AStiffpsv_csc= Stiffpsv_csc.todense()          
+            #scipy.misc.imsave('spheroidalMatrix.png',1*(AStiffpsv_csc != 0.+0.j))
 	    
             
 #            j=0
@@ -332,6 +337,7 @@ def main():
                     j += 1
         #print Stiff_data.shape,Stiff_ij.shape
             Stiff_csc = csc_matrix((Stiff_data,Stiff_ij))
+            
 	            #
 
         # Superlu
