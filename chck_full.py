@@ -150,6 +150,10 @@ def main():
 
            # Set boundary condition terms
             b = np.zeros((3,1),complex)
+            ####Check
+#            dW=0            
+            
+            
             b[0] = dW
             b[1] = dTw/(mu_0_dsm*r_0*r_0)
             b[2] = 0.+0j
@@ -167,17 +171,17 @@ def main():
 
             dU, dRu, dV, dSv = np.zeros(4, 'complex')
             aux = lbd_0_dsm-2*mu_0_dsm
-            msgn = m/abs(m)
-
+            
+            if m!= 0: msgn = m/abs(m) 
+            
             if (m==0):
                 dU  += 2*b1*mrr/aux/(r_0**2)
-                dRu += 2*b1*(mtt+mpp-2*lbd_0_dsm*mrr/aux)/(r_0**3)
-                dSv += b1*LL*(-mtt-mpp+2*mrr*lbd_0_dsm/aux)/(r_0**3)
+                dRu += 2*b1*(mtt+mpp-2*lbd_0_dsm*mrr/aux)/r_0
+                dSv += b1*LL*(-mtt-mpp+2*mrr*lbd_0_dsm/aux)/r_0
             elif(abs(m)==1):
-                dV  += b1*complex(-msgn*mrt, mrp)/mu_0_dsm/(r_0**2)
+                dV  += b1*complex(-msgn*mrt, mrp)/mu_0_dsm/(r_0**2)                
             elif(abs(m)==2):
-                dSv += -b2*complex(mtt-mpp, 2*msgn*mtp)/(r_0**3)
-
+                dSv += -b2*complex(mtt-mpp, 2*msgn*mtp)/r_0
             ##### Coeff (Matrix)
            #Def  each row
 
@@ -208,15 +212,20 @@ def main():
             y_a*gS3(r_a)+yp_a*gS4(r_a)   , 0.+0.j ])
 
             B = np.array([row1, row2, row3, row4, row5, row6])
+            
+            #################Just to check
+            #dU = dV = 0.+0.j
+            ################Justo to check
 
             b = np.zeros((6,1),complex)
             b[0] = dU
             b[1] = dV
-            b[2] = dSv
-            b[3] = dRu
+            b[2] = dSv/r_0**2
+            b[3] = dRu/r_0**2
             b[4] = 0.+0.j
-            b[5] = 0.+0.j
-
+            b[5] = 0.+0.j            
+            
+ 
             x2 = np.linalg.solve(B,b)
             ############ Calculating the Displacement from de potentials:
             U0 = np.zeros(len(r),complex)
@@ -300,9 +309,10 @@ def main():
             Stiffpsv_data[11*ncol-7:12*ncol-8]= Stiff3[0,1:]
 	   
            
-            #Stiffpsv_csc = csc_matrix((Stiffpsv_data,Stiffpsv_ij)) 
+            Stiffpsv_csc = csc_matrix((Stiffpsv_data,Stiffpsv_ij)) 
+
             #Checking the final shape with a picture:
-            #AStiffpsv_csc= Stiffpsv_csc.todense()          
+            #AStiffpsv_csc= Stiffpsv_csc.todense()                      
             #scipy.misc.imsave('spheroidalMatrix.png',1*(AStiffpsv_csc != 0.+0.j))            
                 
         # to csc
@@ -316,7 +326,7 @@ def main():
                 Stiff_ij[0,j] = col
                 Stiff_ij[1,j] = col
                 j += 1
-        #    print col,j,3*ncol-2
+        
                 if col < ncol-1:
                     Stiff_data[j] = Stiff[0][col+1]
                     Stiff_ij[0,j] = col
@@ -326,15 +336,15 @@ def main():
                     Stiff_ij[0,j] = col+1
                     Stiff_ij[1,j] = col
                     j += 1
-        #print Stiff_data.shape,Stiff_ij.shape
+        
             Stiff_csc = csc_matrix((Stiff_data,Stiff_ij))
             
             #Building the full matrix:
             #print np.shape(Stiff_ij)    
-            Stiffsh_ij = np.array([Stiff_ij[0][:]+2*ncol,Stiff_ij[1][:]+2*ncol])
-            Full_data  = np.hstack((Stiffpsv_data,Stiff_data))            
-            Full_ij    = np.hstack((Stiffpsv_ij,Stiffsh_ij))
-            Full_csc   = csc_matrix((Full_data,Full_ij)) 
+            #Stiffsh_ij = np.array([Stiff_ij[0][:]+2*ncol,Stiff_ij[1][:]+2*ncol])
+            #Full_data  = np.hstack((Stiffpsv_data,Stiff_data))            
+            #Full_ij    = np.hstack((Stiffpsv_ij,Stiffsh_ij))
+            #Full_csc   = csc_matrix((Full_data,Full_ij)) 
             
             
             #Checking the Full matrix's shape in a picture            
@@ -353,19 +363,43 @@ def main():
                 g[-1] = -dW*(A[1][-1]+A[0][-1])
             else:
                 g[i_0-1] = -dTw
-            x = lu.solve(g)
-            if abs(m) == 1: x[i_0:] += dW
-            
-            
-            lufull =  linalg.splu(Full_csc)
-            gfull  = np.zeros((3*ncol),complex)
-            
-            
-            
-            
-            
-            
 
+
+            
+            x = lu.solve(g)
+            if abs(m) == 1: x[i_0:] += dW           
+                        
+            
+            lupsv =  linalg.splu(Stiffpsv_csc)
+            gpsv =  np.zeros((2*ncol),complex)
+            Dis =   np.zeros((2*(ncol-i_0)),complex)
+            ###Discontinuities in the displecements
+
+            Ind =(Stiffpsv_ij[0,:] >= 2*i_0) * (Stiffpsv_ij[1,:] >= 2*i_0)
+            Ind = np.nonzero(Ind)[0]
+            Stiffsvp_up = csc_matrix((Stiffpsv_data[Ind],Stiffpsv_ij[:,Ind]-2*i_0)) 
+            St_psv_Unp = Stiffsvp_up.todense()       
+            #Checking with a image
+            #AStiffpsvp = Stiffpsvp.todense()   
+            #scipy.misc.imsave('psvmat.png', 1*(AStiffpsvp != 0.))  
+            Dis[::2]  += -dU 
+            Dis[1::2] += -dV
+            print dU, dV
+            
+            gpsv[2*i_0:] = np.dot(St_psv_Unp,Dis)         
+
+	   ####  Excitations coeff       
+            if m == 0:
+                gpsv[2*i_0-2] = -dSv
+                gpsv[2*i_0-1] = -dRu
+            if m == 2:        
+                gpsv[2*i_0-1] = -dSv
+
+            xpsv = lupsv.solve(gpsv)   
+            
+            if abs(m) == 1: xpsv[2*i_0+1::2] += dV
+            if m == 0: xpsv[2*i_0::2] += dU
+            
 
             #Compute the relative error at surface:
             error  = np.absolute(W0[-1]-x[-1])/np.absolute(W0[-1]) * 100.
@@ -379,10 +413,10 @@ def main():
         pl.plot(r,W0.real,r,W0.imag+1.e-9,rg[1:],x.real,rg[1:],x.imag+1.e-9)
         pl.title(Label)
         pl.figure()
-        pl.plot(r,U0.real,r,U0.imag+1.e-9)
+        pl.plot(r,U0.real,r,U0.imag+1.e-9,rg[1:],xpsv.real[::2],rg[1:],xpsv.imag[::2]+1.e-9)
         pl.title(Label+ "U")
         pl.figure()
-        pl.plot(r,V0.real,r,V0.imag+1.e-9)
+        pl.plot(r,V0.real,r,V0.imag+1.e-9,rg[1:],xpsv[1::2].real,rg[1:],xpsv[1::2].imag+1.e-9)
         pl.title(Label+ "V")
     print ERROR
 
