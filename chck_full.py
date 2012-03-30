@@ -384,9 +384,10 @@ def main():
             #scipy.misc.imsave('psvmat.png', 1*(AStiffpsvp != 0.))  
             Dis[::2]  += -dU 
             Dis[1::2] += -dV
-            print dU, dV
             
-            gpsv[2*i_0:] = np.dot(St_psv_Unp,Dis)         
+            
+	    if m==0 or abs(m)==1:           
+	        gpsv[2*i_0:] = np.dot(St_psv_Unp,Dis)         
 
 	   ####  Excitations coeff       
             if m == 0:
