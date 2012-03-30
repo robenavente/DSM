@@ -67,7 +67,7 @@ subroutine gssh_m2(u, v, w, x, theta, phi, p, dp, lmax)
 
 end subroutine gssh_m2
 
-subroutine PlmBar_d1_m2(p, dp, lmax, z, csphase, cnorm)
+subroutine PlmBar_d1_m2(p, dp, lmax, z)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !	This function evalutates all of the normalized associated Legendre
@@ -140,9 +140,9 @@ subroutine PlmBar_d1_m2(p, dp, lmax, z, csphase, cnorm)
 !	use SHTOOLS, only: CSPHASE_DEFAULT
 
 	integer, intent(in) ::	lmax
-	real*8, intent(out) ::	p(:), dp(:)
+	real*8, intent(out) ::	p(lmax*3), dp(lmax*3)
        	real*8, intent(in) ::	z
-       	integer, intent(in), optional :: csphase, cnorm
+       	!integer, intent(in), optional :: csphase, cnorm
        	real*8 ::	pm2, pm1, pmm, plm, rescalem, phase, u, scalef
       	real*8, allocatable, save ::	f1(:), f2(:), sqr(:)
       	integer ::	k, kstart, m, l, sdim, astat(3)
@@ -158,17 +158,17 @@ subroutine PlmBar_d1_m2(p, dp, lmax, z, csphase, cnorm)
 
       	sdim = lmax*3
       	
-	if (size(p) < sdim) then 
-		print*, "Error --- PlmBar_d1_m2"
-     		print*, "P must be dimensioned as LMAX*3 where LMAX is ", lmax
-     		print*, "Input array is dimensioned ", size(p)
-     		stop
-     	elseif (size(dp) < sdim) then 
-		print*, "Error --- PlmBar_d1_m2"
-     		print*, "DP must be dimensioned as LMAX*3 where LMAX is ", lmax
-     		print*, "Input array is dimensioned ", size(dp)
-     		stop
-     	elseif (lmax < 0) then 
+!	if (size(p) < sdim) then 
+!		print*, "Error --- PlmBar_d1_m2"
+!     		print*, "P must be dimensioned as LMAX*3 where LMAX is ", lmax
+!     		print*, "Input array is dimensioned ", size(p)
+!     		stop
+!     	elseif (size(dp) < sdim) then 
+!		print*, "Error --- PlmBar_d1_m2"
+!     		print*, "DP must be dimensioned as LMAX*3 where LMAX is ", lmax
+!     		print*, "Input array is dimensioned ", size(dp)
+!     		stop
+     	if (lmax < 0) then 
      		print*, "Error --- PlmBar_d1_m2"
      		print*, "LMAX must be greater than or equal to 0."
      		print*, "Input value is ", lmax
@@ -186,19 +186,19 @@ subroutine PlmBar_d1_m2(p, dp, lmax, z, csphase, cnorm)
      	endif
      	
      	
-     	if (present(csphase)) then
-     		if (csphase == -1) then
-     			phase = -1.0d0
-     		elseif (csphase == 1) then
-     			phase = 1.0d0
-     		else
-     			print*, "PlmBar_d1_m2 --- Error"
-     			print*, "CSPHASE must be 1 (exclude) or -1 (include)."
-     			stop
-     		endif
-     	else
+!     	if (present(csphase)) then
+!     		if (csphase == -1) then
+!     			phase = -1.0d0
+!     		elseif (csphase == 1) then
+!     			phase = 1.0d0
+!     		else
+!     			print*, "PlmBar_d1_m2 --- Error"
+!     			print*, "CSPHASE must be 1 (exclude) or -1 (include)."
+!     			stop
+!     		endif
+!     	else
      		phase = dble(CSPHASE_DEFAULT)
-     	endif
+ !    	endif
      		
 	scalef = 1.0d-280
 
@@ -294,15 +294,15 @@ subroutine PlmBar_d1_m2(p, dp, lmax, z, csphase, cnorm)
 	!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!	
 
-	if (present(cnorm)) then
-		if (cnorm == 1) then
-			pmm = scalef
-		else
-			pmm = sqr(2)*scalef
-		endif
-	else
+!	if (present(cnorm)) then
+!		if (cnorm == 1) then
+!			pmm = scalef
+!		else
+!			pmm = sqr(2)*scalef
+!		endif
+!	else
       		pmm = sqr(2)*scalef
-      	endif
+!      	endif
 	
       	rescalem = 1.0d0/scalef
       	kstart = 1
