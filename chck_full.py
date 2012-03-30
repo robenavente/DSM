@@ -41,7 +41,7 @@ def main():
     #PERIOD = np.arange(10,100,1) #Vector with the periods
     L = [75]
     #L      = [10, 50, 75, 100] #Vector with l
-    m      = 1
+    m      = 2
     r_0  = 6321
 
     #Theoretical solution's variables
@@ -261,13 +261,13 @@ def main():
 
             (K0,K1,K2a,K2b,K3) = imats(rg,i_0)
             #p=p'=1
-            Stiff1 = -(omega*omega*rho*K0 - lbd_dsm*(4*K1+2*(K2a+K2b)+K3)-mu_dsm*((LL*LL+4)))
+            Stiff1 = -(omega*omega*rho*K0 - lbd_dsm*(4*K1+2*(K2a+K2b)+K3)-mu_dsm*(K1*(LL*LL+4)+2*K3))
             #p=p'=2
             Stiff2 = -(omega*omega*rho*K0 - lbd_dsm*LL*LL*K1-mu_dsm*((2*LL*LL-1)*K1-K2a-K2b+K3))
 	    #p=1,p'=2
-            Stiff3 = - lbd_dsm*(2*LL*K1+LL*K2a)-mu_dsm*(3*LL*K1-LL*K2b)
+            Stiff3 = - lbd_dsm*(2*LL*K1+LL*K2b)-mu_dsm*(3*LL*K1-LL*K2a)
             #p=2,p'=1          
-            Stiff4 = - lbd_dsm*(2*LL*K1+LL*K2b)-mu_dsm*(3*LL*K1-LL*K2a)
+            Stiff4 = - lbd_dsm*(2*LL*K1+LL*K2a)-mu_dsm*(3*LL*K1-LL*K2b)
             #P'=P=3            
             Stiff = -(omega*omega*rho*K0 - mu_dsm*((LL*LL-1)*K1 -K2a - K2b + K3))
             
@@ -385,8 +385,7 @@ def main():
             Dis[::2]  += -dU 
             Dis[1::2] += -dV
             
-            
-	    if m==0 or abs(m)==1:           
+            if m==0 or abs(m)==1:           
 	        gpsv[2*i_0:] = np.dot(St_psv_Unp,Dis)         
 
 	   ####  Excitations coeff       
@@ -397,6 +396,7 @@ def main():
                 gpsv[2*i_0-1] = -dSv
 
             xpsv = lupsv.solve(gpsv)   
+            
             
             if abs(m) == 1: xpsv[2*i_0+1::2] += dV
             if m == 0: xpsv[2*i_0::2] += dU
