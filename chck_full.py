@@ -41,7 +41,7 @@ def main():
     #PERIOD = np.arange(10,100,1) #Vector with the periods
     L = [75]
     #L      = [10, 50, 75, 100] #Vector with l
-    m      = 2
+    m      = 1
     r_0  = 6321
 
     #Theoretical solution's variables
@@ -271,6 +271,16 @@ def main():
             #P'=P=3            
             Stiff = -(omega*omega*rho*K0 - mu_dsm*((LL*LL-1)*K1 -K2a - K2b + K3))
             
+            Try=100./np.mean(Stiff)
+            
+            print  np.mean(Stiff4)*Try, np.mean(Stiff3)*Try, np.mean(Stiff2)*Try, np.mean(Stiff1)*Try
+            #######Checking   
+#            Stiff3 = -Stiff3[:]
+#            Stiff4 = -Stiff4[:]
+            #Stiff2[:,:] = 0.+0j
+            #print Stiff1
+            #######            
+            
             ncol = Stiff.shape[1]
             # to csc
             Stiffpsv_data = np.zeros(7*2*ncol-12-(2*ncol-4), complex)
@@ -293,27 +303,29 @@ def main():
             Stiffpsv_ij[0,6*ncol-4:8*ncol-5] = range(0,2*ncol-1)    
             Stiffpsv_ij[1,6*ncol-4:8*ncol-5] = range(1,2*ncol) 
             Stiffpsv_data[6*ncol-4:8*ncol-5:2]= Stiff4[1,:]
-            Stiffpsv_data[6*ncol-3:8*ncol-5:2]= Stiff3[1,:-1]       
+            Stiffpsv_data[6*ncol-3:8*ncol-5:2]= Stiff3[0,1:]       
             #Filling the 2nd-down diagonal:
             Stiffpsv_ij[0,8*ncol-5:10*ncol-6] =  range(1,2*ncol)   
             Stiffpsv_ij[1,8*ncol-5:10*ncol-6] =  range(0,2*ncol-1)
             Stiffpsv_data[8*ncol-5:10*ncol-6:2]= Stiff3[1,:]
-            Stiffpsv_data[8*ncol-4:10*ncol-6:2]= Stiff4[1,:-1]   
+            Stiffpsv_data[8*ncol-4:10*ncol-6:2]= Stiff4[0,1:]   
             #Filling the 4th-upper diagonal:
             Stiffpsv_ij[0,10*ncol-6:11*ncol-7] =  range(0,2*ncol-3,2)   
             Stiffpsv_ij[1,10*ncol-6:11*ncol-7] =  range(3,2*ncol,2)
-            Stiffpsv_data[10*ncol-6:11*ncol-7]= Stiff4[0,1:]
+            Stiffpsv_data[10*ncol-6:11*ncol-7]=   Stiff4[0,1:]
            #Filling the 4th-lower diagonal:
             Stiffpsv_ij[0,11*ncol-7:12*ncol-8] = range(3,2*ncol,2)
             Stiffpsv_ij[1,11*ncol-7:12*ncol-8] = range(0,2*ncol-3,2)  
-            Stiffpsv_data[11*ncol-7:12*ncol-8]= Stiff3[0,1:]
-	   
-           
-            Stiffpsv_csc = csc_matrix((Stiffpsv_data,Stiffpsv_ij)) 
+            Stiffpsv_data[11*ncol-7:12*ncol-8]=  Stiff3[0,1:]
+	  
 
+            Stiffpsv_csc = csc_matrix((Stiffpsv_data,Stiffpsv_ij)) 
+            
+            
+             
             #Checking the final shape with a picture:
-            #AStiffpsv_csc= Stiffpsv_csc.todense()                      
-            #scipy.misc.imsave('spheroidalMatrix.png',1*(AStiffpsv_csc != 0.+0.j))            
+#            AStiffpsv_csc= Stiffpsv_csc.todense()                      
+#            scipy.misc.imsave('spheroidalMatrix.png',1*(AStiffpsv_csc != 0.+0.j))            
                 
         # to csc
             Stiff_data = np.zeros((3*ncol-2),complex)
@@ -385,6 +397,7 @@ def main():
             Dis[::2]  += -dU 
             Dis[1::2] += -dV
             
+           
             if m==0 or abs(m)==1:           
 	        gpsv[2*i_0:] = np.dot(St_psv_Unp,Dis)         
 
@@ -401,7 +414,9 @@ def main():
             if abs(m) == 1: xpsv[2*i_0+1::2] += dV
             if m == 0: xpsv[2*i_0::2] += dU
             
-
+        
+            #print gpsv[2*i_0-1:] 
+            #print g[i_0-1:]    
             #Compute the relative error at surface:
             error  = np.absolute(W0[-1]-x[-1])/np.absolute(W0[-1]) * 100.
             ERROR[len(ERROR):] = [error]
