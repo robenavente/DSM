@@ -4,12 +4,14 @@ import os
 import scipy.special
 import scipy.linalg
 import math
-import pylab as pl
+import matplotlib.pyplot as plt
 import numpy as np
+import numpy.fft as fft
 from scipy.lib.lapack import get_lapack_funcs
 from scipy.sparse import csc_matrix,linalg
 import dsm #,imats_new
 import shtools_gssh
+import pickle
 
 #General variables:
 
@@ -18,8 +20,8 @@ mrp    = 1.
 mtt    = 1.
 mpp    = 1.
 mtp    = 1.
-Qm     = 1000.
-tau    = 1024.
+Qm     = 2000.
+tau    = 4096.
 
 beta   = 4. # in km/s
 rho    = 3. # gm/cm^3 (need to account for units in source)
@@ -27,19 +29,25 @@ rho    = 3. # gm/cm^3 (need to account for units in source)
 mu     = rho*beta*beta
 mu_src = rho*beta*beta     
 
-Lmax   = 100
-PERIOD = np.arange(1000.0,0.,-10.) #Vector with the periods
-L      = range(1,Lmax) #Vector with l
+lmax   = 500
+f      = np.arange(0.00025,0.0251,0.00025) #Vector with the frequencies
+PERIOD = 1./f #Vector with the periods
+L      = range(1,lmax+1) #Vector with l
 phi = 25.
 THETA  = np.arange(10.,91.,10.)
 thetaphis =zip(THETA,phi*np.ones(len(THETA)))
-ps = []
-dps = []
+#ps = []
+#dps = []
+#for theta,phi in thetaphis:
+#    z = math.cos(theta*math.pi/180.)
+#    p,dp = shtools_gssh.plmbar_d1_m2(lmax, z)
+#    ps.append(p)
+#    dps.append(dp)
+plms = []
 for theta,phi in thetaphis:
     z = math.cos(theta*math.pi/180.)
-    p,dp = shtools_gssh.plmbar_d1_m2(Lmax, z)
-    ps.append(p)
-    dps.append(dp)
+    p,dp = shtools_gssh.plmbar_d1_m2(lmax, z)
+    plms.append( (theta,phi,p,dp))
 
 r_src  = 6321 
 
@@ -62,6 +70,7 @@ for i_src in range(len(rg)-1,-1,-1):
     if r_src >= rg[i_src]: break
 
 w = []
+(K0,K1,K2a,K2b,K3) = dsm.imats(rg,i_src)
 for period in PERIOD:
 
     w.append([])
@@ -73,7 +82,7 @@ for period in PERIOD:
     mu_dsm     = mu*xdsm
     mu_src_dsm = mu_src*xdsm
 
-    z = np.zeros((3,5,L+1),complex)
+    z = np.zeros((3,5,lmax+1),complex)
     for l in L:
     
         ERROR  = []   # Resetting the vector with the errors
@@ -87,7 +96,6 @@ for period in PERIOD:
         # Calculate elemental matrices
 ###########  ###### 
 
-	(K0,K1,K2a,K2b,K3) = dsm.imats(rg,i_src)
 	Stiff = -(omega*omega*rho*K0 - mu_dsm*((l*(l+1)-1)*K1 -K2a - K2b + K3))
 	ncol = Stiff.shape[1]
 
@@ -120,7 +128,7 @@ for period in PERIOD:
 	ncol = Stiff.shape[1]
         b1 = math.sqrt((2*l+1)/(16.*math.pi))
         b2 = math.sqrt((2*l+1)*(l-1)*(l+2)/(64.*math.pi))
-        for m = range(-2,2,1):
+        for m in range(-2,3,1):
             # Set up jumps in W and T
             dW = 0.+0.j
             if (abs(m) == 1):
@@ -139,23 +147,49 @@ for period in PERIOD:
                 g[i_src-1] = -dTw
             x = lu.solve(g)       
             if abs(m) == 1: x[i_src:] += dW
-            z[3,2+m,l] = x[-1]
+            z[2,2+m,l] = x[-1]
     # Call gssh
-    for i in range(0,len(thephis)):
-        theta,phi = thetaphis[i]
-        u,v,w0 = shtools_gssh.gssh_m2(z, theta, phi, ps[i], dps[i], lmax)
+    #    for i in range(0,len(thetaphis)):
+    #    theta,phi = thetaphis[i]
+    #    u,v,w0 = shtools_gssh.gssh_m2(z, theta, phi, ps[i], dps[i], lmax)
+    #    w[-1].append(w0)
+    for theta,phi,p,dp in plms:
+        u,v,w0 = shtools_gssh.gssh_m2(z, theta, phi, p, dp, lmax)
         w[-1].append(w0)
         
-    Label = 'l=' + str(l) 
-    pl.figure(1)
-    pl.plot(PERIOD,ERROR,label=Label)
-    pl.legend()
-    pl.figure()
-    pl.plot(r,W0.real,r,W0.imag+1.e-9,rg[1:],x.real,rg[1:],x.imag+1.e-9)
-    pl.title(Label)    
-#print ERROR    
+outfile = open('w.pkl', 'wb')
+pickle.dump(w, outfile)
+outfile.close()
+Label = 'Theta = %g Phi = %g' % thetaphis[0]
+w = np.array(w).transpose()
+zrs = np.zeros((len(thetaphis),1),complex)
+y=np.conjugate(np.append(zrs,w,1))
+nt = 2*(y.shape[1]-1)
+g=np.zeros((len(thetaphis),nt))
+t = 0.5*PERIOD[-1]*np.arange(0.,nt)
+for i in range(0,len(thetaphis)):
+    g[i,:] = fft.irfft(y[i])
+    for j in range(0,nt):
+        g[i,j] *= math.exp(t[i]/tau)
+plt.figure()
+plt.hold(True)
+tt0 = np.zeros((2,len(thetaphis)))
+tt1 = np.zeros((2,len(thetaphis)))
+for i in range(0,len(thetaphis)):
+    theta,phi = thetaphis[i]
+    tt0[0][i] = theta
+    tt1[0][i] = theta
+    x1 = 6371.*math.sin(0.5*math.pi*theta/180.)
+    x2 = 6371.*math.cos(0.5*math.pi*theta/180.)
+    x3 = math.sqrt(x1**2+(6371.-x2)**2)
+    tt0[1][i] = (2.*x1/beta) % PERIOD[0]
+    tt1[1][i] = (2.*x3/beta) % PERIOD[0]
+    plt.plot(t,4.*g[i]/g[i].max()+theta)
+plt.plot(tt0[1,:],tt0[0,:],tt1[1,:],tt1[0,:])
+plt.savefig('chksh_xform.pdf')
+plt.show()
+plt.hold(False)
 
-pl.show()
 
 
 

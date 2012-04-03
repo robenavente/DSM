@@ -9,32 +9,36 @@ subroutine gssh_m2(u, v, w, x, theta, phi, p, dp, lmax)
         complex*16, intent(in) :: x(:,:,:)
         complex*16, intent(out) :: u, v, w
 	real*8, intent(in) ::	p(:), dp(:), theta, phi
-        real*8 :: pi,cosm(3),sinm(3),xnorm,bigLi,sinthi
+        real*8 :: pi,cosm(3),sinm(3),xnorm,bigLi,sinthi, nan
         integer :: sdim,k2,l,m
         complex*16 :: eimph
 
       	sdim = lmax*3
-      	
+! Initialize u,v,w with NaN for error return - this works for gfortran
+      	nan = 0.
+        u = nan/nan
+        v = nan/nan
+        w = nan/nan
 	if (size(p) < sdim) then 
 		print*, "Error --- gssh_m2"
      		print*, "P must be dimensioned as (LMAX+1)*3 where LMAX is ", lmax
      		print*, "Input array is dimensioned ", size(p)
-     		stop
+     		return
      	elseif (size(dp) < sdim) then 
 		print*, "Error --- gssh_m2"
      		print*, "DP must be dimensioned as (LMAX+1)*3 where LMAX is ", lmax
      		print*, "Input array is dimensioned ", size(dp)
-     		stop
-     	elseif (size(x,1) /= 3 .or. size(x,2) /= 5 .or. size(x,3) > lmax+1) then 
+     		return
+     	elseif (size(x,1) /= 3 .or. size(x,2) /= 5 .or. size(x,3) < lmax) then 
 		print*, "Error --- gssh_m2"
      		print*, "X must be dimensioned as (3,5,LMAX+1) where LMAX is ", lmax
      		print*, "Input array is dimensioned ",size(x,1), size(x,2),size(x,3) 
-     		stop
+     		return
      	elseif (lmax < 0) then 
      		print*, "Error --- gssh_m2"
      		print*, "LMAX must be greater than or equal to 0."
      		print*, "Input value is ", lmax
-     		stop
+     		return
      	endif
         pi = acos(-1.0d0)
         xnorm = sqrt(0.25/pi)
@@ -46,22 +50,30 @@ subroutine gssh_m2(u, v, w, x, theta, phi, p, dp, lmax)
            sinm(m+1) = xnorm*sin(m*phi*pi/180.0d0)
         enddo
         sinthi = 1./sin(theta*pi/180.)
-        do l=0,lmax
+! First the l=0 term
+        u = u +  x(1,3,1)
+        do l=1,lmax
+! Then l>0, m=0 term
+           k2 = max(l,3*(l-1)) + 1
+           u = u +  x(1,3+m,l+1)*p(k2)
            bigLi = 1./sqrt(l*(l+1.))
-           do m=0,min(l,2)
+           v = v + bigLi*x(2,3,l+1)*dp(k2)
+           w = w + bigLi*x(3,3,l+1)*dp(k2)
+! Then the rest
+           do m=1,min(l,2)
               k2 = max(l,3*(l-1)) + m + 1
               eimph = cmplx(cosm(m+1), sinm(m+1))
-              u = u +  x(1,3+m,l)*p(k2)*eimph
-              v = v + bigLi*(x(2,3+m,l)*dp(k2)-x(3,3+m,l)*cmplx(0.,m*sinthi*p(k2)))*eimph
-              w = w + bigLi*(x(3,3+m,l)*dp(k2)+x(2,3+m,l)*cmplx(0.,m*sinthi*p(k2)))*eimph
-              if (m.ne.0) then
-                 eimph = cmplx(cosm(m+1),-sinm(m+1))
-                 if (m.eq.1) eimph = -eimph
-                 u = u + x(1,3-m,l)*p(k2)*eimph
-                 v = v + bigLi*(x(2,3-m,l)*dp(k2)-x(3,3-m,l)*cmplx(0.,-m*sinthi*p(k2)))*eimph
-                 w = w + bigLi*(x(3,3-m,l)*dp(k2)+x(2,3-m,l)*cmplx(0.,-m*sinthi*p(k2)))*eimph
-              endif
-           enddo
+              u = u +  x(1,3+m,l+1)*p(k2)*eimph
+!              write(*,*) l,m,x(3,3+m,l+1),x(2,3+m,l+1),p(k2),dp(k2),eimph,x(1,3+m,l+1)*p(k2)*eimph
+              v = v + bigLi*(x(2,3+m,l+1)*dp(k2)-x(3,3+m,l+1)*cmplx(0.,m*sinthi*p(k2)))*eimph
+              w = w + bigLi*(x(3,3+m,l+1)*dp(k2)+x(2,3+m,l+1)*cmplx(0.,m*sinthi*p(k2)))*eimph
+              eimph = cmplx(cosm(m+1),-sinm(m+1))
+              if (m.eq.1) eimph = -eimph
+              u = u + x(1,3-m,l+1)*p(k2)*eimph
+!              write(*,*) l,-m,x(3,3-m,l+1),x(2,3-m,l+1),p(k2),dp(k2),eimph
+              v = v + bigLi*(x(2,3-m,l+1)*dp(k2)-x(3,3-m,l+1)*cmplx(0.,-m*sinthi*p(k2)))*eimph
+              w = w + bigLi*(x(3,3-m,l+1)*dp(k2)+x(2,3-m,l+1)*cmplx(0.,-m*sinthi*p(k2)))*eimph
+            enddo
         enddo
 
 
@@ -69,6 +81,13 @@ end subroutine gssh_m2
 
 subroutine PlmBar_d1_m2(p, dp, lmax, z)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!  This routine has been modified from the original SHTOOLS routine PlmBar_d1
+!  so that it only calculates associated Legendre functions and derivates for
+!  0<m<3. The Legendre functions and derivatives for l,m are accessed via the
+!  arrays p amd dp using index :
+!                    max(l,3*(l-1)) + m + 1.
+!                                                ----- P. Cummins 2 April, 2012
 !
 !	This function evalutates all of the normalized associated Legendre
 !	functions up to degree lmax. The functions are initially scaled by 
