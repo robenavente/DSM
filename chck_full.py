@@ -271,7 +271,9 @@ def main():
             #P'=P=3            
             Stiff = -(omega*omega*rho*K0 - mu_dsm*((LL*LL-1)*K1 -K2a - K2b + K3))
             
-            print np.mean(Stiff), np.mean(Stiff4), np.mean(Stiff3), np.mean(Stiff2), np.mean(Stiff1)
+            Try=100./np.mean(Stiff)
+            
+            print  np.mean(Stiff4)*Try, np.mean(Stiff3)*Try, np.mean(Stiff2)*Try, np.mean(Stiff1)*Try
             #######Checking   
 #            Stiff3 = -Stiff3[:]
 #            Stiff4 = -Stiff4[:]
