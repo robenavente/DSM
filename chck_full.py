@@ -144,8 +144,8 @@ def main():
             # Linear system for boundary conditions at source depth adn surface
             #              below source     above source
             A = np.array([[ -j_0+0j ,      j_0+0j,          y_0+0j],\
-                        #[ j_0/r_0-jp_0+0j ,     jp_0-j_0/r_0+0j,    yp_0-y_0/r_0+0j],\
-                          [ -jp_0+0j ,     jp_0+0j,         yp_0+0j],\
+                       # [ j_0/r_0-jp_0+0j ,     jp_0-j_0/r_0+0j,    yp_0-y_0/r_0+0j],\
+                         [ -jp_0+0j ,     jp_0+0j,         yp_0+0j],\
                           [0.+0j,         jp_a-j_a/r_a+0j,    yp_a-y_a/r_a+0j]])
 
            # Set boundary condition terms
@@ -207,9 +207,9 @@ def main():
             y_a*gS3(r_a)+yp_a*gS4(r_a)   , 0.+0.j ])
 
             row6 = np.array(\
-            [gS1(r_a)*ja_a+gS2(r_a)*jpa_a, gS1(r_a)*ya_a+gS2(r_a)*ypa_a,\
-            0.+0.j                       , j_a*gS3(r_a)+jp_a*gS4(r_a),\
-            y_a*gS3(r_a)+yp_a*gS4(r_a)   , 0.+0.j ])
+            [gR1(r_a)*ja_a+gR2(r_a)*jpa_a, gR1(r_a)*ya_a+gR2(r_a)*ypa_a,\
+            0.+0.j                       , j_a*gR3(r_a)+jp_a*gR4(r_a),\
+            y_a*gR3(r_a)+yp_a*gR4(r_a)   , 0.+0.j ])
 
             B = np.array([row1, row2, row3, row4, row5, row6])
             
@@ -222,11 +222,11 @@ def main():
             b[1] = dV
             b[2] = dSv/r_0**2
             b[3] = dRu/r_0**2
-            b[4] = 0.+0.j
-            b[5] = 0.+0.j            
+           
             
- 
+            #print l, period   
             x2 = np.linalg.solve(B,b)
+            #x2 = np.zeros((6,1),complex)
             ############ Calculating the Displacement from de potentials:
             U0 = np.zeros(len(r),complex)
             V0 = np.zeros(len(r),complex)
@@ -433,9 +433,9 @@ def main():
             ERROR[len(ERROR):] = [error]
 
         Label = 'l=' + str(l)
-        #pl.figure(1)
-        #pl.plot(PERIOD,ERROR,label=Label)
-        #pl.legend()
+#        pl.figure(1)
+#        pl.plot(PERIOD,ERROR,label=Label)
+#        pl.legend()
         
         
         
