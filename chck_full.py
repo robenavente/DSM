@@ -41,7 +41,7 @@ def main():
     #PERIOD = np.arange(10,100,1) #Vector with the periods
     L = [75]
     #L      = [10, 50, 75, 100] #Vector with l
-    m      = 2
+    m      = 1
     r_0  = 6321
 
     #Theoretical solution's variables
@@ -64,10 +64,17 @@ def main():
     rbelow = np.linspace(0, r_0-dr, nb)
     rabove = np.arange(r_0, r_a+1,dr)
     rg     = np.hstack((rbelow, rabove))
+     # Calculate elemental matrices
+    (K0,K1,K2a,K2b,K3) = imats(rg,len(rbelow))
+    
+    
 
     for l in L:
 
-        ERROR  = []   # Resetting the vector with the errors
+        ERRORu   = []   # Resetting the vector with the errors
+        ERRORv   = []   
+        ERRORw   = []
+        
         LL = np.sqrt(l*(l+1))
         for period in PERIOD:
 
@@ -256,10 +263,10 @@ def main():
             for i_0 in range(len(rg)-1,-1,-1):
                 if r_0 >= rg[i_0]: break
 
-            # Calculate elemental matrices
+           
     ###########  ######hm
 
-            (K0,K1,K2a,K2b,K3) = imats(rg,i_0)
+            
 
             #p=p'=1
             Stiff1 = -omega*omega*rho*K0 + lbd_dsm*(4*K1+2*(K2a+K2b)+K3)\
@@ -318,8 +325,10 @@ def main():
             Stiffpsv_ij[1,11*ncol-7:12*ncol-8] = range(0,2*ncol-3,2)  
             Stiffpsv_data[11*ncol-7:12*ncol-8]=  Stiff4[0,1:]
 	  
-
-            Stiffpsv_csc = csc_matrix((Stiffpsv_data,Stiffpsv_ij)) 
+#            Ind =(Stiffpsv_ij[0,:] == 2*ncol-2) * (Stiffpsv_ij[1,:] == 2*ncol-1)
+#            Ind = np.nonzero(Ind)[0]
+#            print Stiffpsv_data[Ind]
+            Stiffpsv_csc = csc_matrix((Stiffpsv_data,Stiffpsv_ij))  
             
             
              
@@ -342,7 +351,7 @@ def main():
             Stiff_data[2*ncol-1:3*ncol-2] = Stiff[0,1:]
             Stiff_ij[0,2*ncol-1:3*ncol-2] = range(1,ncol) 
             Stiff_ij[1,2*ncol-1:3*ncol-2] = range(0,ncol-1)
-            
+         
 #            j = 0
 #            for col in range(0,ncol):
 #                Stiff_data[j] = Stiff[1][col]
@@ -377,7 +386,6 @@ def main():
 
         # Superlu
             lu = linalg.splu(Stiff_csc)
-
             ncol = Stiff.shape[1]
             g = np.zeros((ncol),complex)
             A = Stiff[:,i_0:]
@@ -401,17 +409,38 @@ def main():
             Ind =(Stiffpsv_ij[0,:] >= 2*i_0) * (Stiffpsv_ij[1,:] >= 2*i_0)
             Ind = np.nonzero(Ind)[0]
             Stiffsvp_up = csc_matrix((Stiffpsv_data[Ind],Stiffpsv_ij[:,Ind]-2*i_0)) 
-            St_psv_Unp = Stiffsvp_up.todense()       
+            St_psv_Unp = Stiffsvp_up.todense()  
+            #print St_psv_Unp[-2,-1]
             #Checking with a image
             #AStiffpsvp = Stiffpsvp.todense()   
             #scipy.misc.imsave('psvmat.png', 1*(AStiffpsvp != 0.))  
             Dis[::2]  += -dU 
             Dis[1::2] += -dV
             
+            
+            AUX1 = Stiff1[:,i_0:]
+            AUX2 = Stiff2[:,i_0:]
+            AUX3 = Stiff3[:,i_0:]
+            AUX4 = Stiff4[:,i_0:]               
+            
            
-            if m==0 or abs(m)==1:           
-	        gpsv[2*i_0:] = np.dot(St_psv_Unp,Dis)         
-
+            if m==0:
+                pass
+            if abs(m)==1: 
+		    
+                # Uncomment to solve without use the unpack the matrix
+                #~ gpsv[2*i_0+2:-3:2]=-dV*(AUX3[0,1:-1]+AUX4[1,1:-1]+AUX4[0,2:])
+		#~ gpsv[2*i_0] = -dV*(AUX4[1,0]+AUX4[0,1])
+                #~ gpsv[-2]=-dV*(AUX3[0,-1]+AUX4[1,-1])
+                
+                #~ gpsv[2*i_0+3:-2:2] = -dV*(AUX2[0,1:-1]+AUX2[1,1:-1]+AUX2[0,2:])
+                #~ gpsv[2*i_0+1] = -dV*(AUX2[1,0]+AUX2[0,1])
+                #~ gpsv[-1] = -dV*(AUX2[0,-1]+AUX2[1,-1])
+#~ #
+#
+	         gpsv[2*i_0::] = np.dot(St_psv_Unp, Dis) 
+                 #print np.shape(gpsv[2*i_0+1::2] ), np.shape(np.dot(St_psv_Unp, Dis)[0,1::2] )
+            #np.savetxt('gpsv.txt', gpsv[2*i_0::].view(float).reshape(-1, 2))
 	   ####  Excitations coeff       
             if m == 0:
                 gpsv[2*i_0-2] = -dSv
@@ -429,12 +458,24 @@ def main():
             #print gpsv[2*i_0-1:] 
             #print g[i_0-1:]    
             #Compute the relative error at surface:
-            error  = np.absolute(W0[-1]-x[-1])/np.absolute(W0[-1]) * 100.
-            ERROR[len(ERROR):] = [error]
+            erroru  = np.absolute(U0[-1]-xpsv[-2])/np.absolute(U0[-1]) * 100.
+            errorv  = np.absolute(V0[-1]-xpsv[-1])/np.absolute(V0[-1]) * 100.
+            errorw  = np.absolute(W0[-1]-x[-1])/np.absolute(W0[-1]) * 100.
+            ERRORu[len(ERRORu):] = [erroru]
+            ERRORv[len(ERRORv):] = [errorv]
+            ERRORw[len(ERRORw):] = [errorw]
 
         Label = 'l=' + str(l)
 #        pl.figure(1)
-#        pl.plot(PERIOD,ERROR,label=Label)
+#        pl.plot(PERIOD,ERRORu,label=Label)
+#        pl.legend()
+#        
+#        pl.figure(2)
+#        pl.plot(PERIOD,ERRORv,label=Label)
+#        pl.legend()
+#        
+#        pl.figure(3)
+#        pl.plot(PERIOD,ERRORw,label=Label)
 #        pl.legend()
         
         
@@ -468,7 +509,7 @@ def main():
         pl.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=1,\
                   ncol=2, mode="expand", borderaxespad=0.)
         pl.title(Label+ "V")
-    print ERROR
+    print ERRORu, ERRORv, ERRORw
 
     pl.show()
 
