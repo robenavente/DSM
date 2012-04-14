@@ -428,7 +428,7 @@ def main():
                 pass
             if abs(m)==1: 
 		    
-                # Uncomment to solve without use the unpack the matrix
+                # Uncomment to solve without use the unpacked matrix
                 #~ gpsv[2*i_0+2:-3:2]=-dV*(AUX3[0,1:-1]+AUX4[1,1:-1]+AUX4[0,2:])
 		#~ gpsv[2*i_0] = -dV*(AUX4[1,0]+AUX4[0,1])
                 #~ gpsv[-2]=-dV*(AUX3[0,-1]+AUX4[1,-1])
