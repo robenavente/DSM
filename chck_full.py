@@ -61,7 +61,7 @@ def main():
     #rbelow = np.cumsum(spbelow[::-1])
     #rbelow=np.hstack(([0.], rbelow))
 
-    rbelow = np.linspace(0, r_0-dr, nb)
+    rbelow = np.linspace(0., r_0-dr, nb)
     rabove = np.arange(r_0, r_a+1,dr)
     rg     = np.hstack((rbelow, rabove))
      # Calculate elemental matrices
@@ -179,7 +179,7 @@ def main():
             dU, dRu, dV, dSv = np.zeros(4, 'complex')
             aux = lbd_0_dsm-2*mu_0_dsm
             
-            if m!= 0: msgn = m/abs(m) 
+            if m!= 0: msgn = np.float(m/abs(m)) 
             
             if (m==0):
                 dU  += 2*b1*mrr/aux/(r_0**2)
@@ -229,6 +229,7 @@ def main():
             b[1] = dV
             b[2] = dSv/r_0**2
             b[3] = dRu/r_0**2
+           
            
             
             #print l, period   
@@ -394,8 +395,6 @@ def main():
                 g[-1] = -dW*(A[1][-1]+A[0][-1])
             else:
                 g[i_0-1] = -dTw
-
-
             
             x = lu.solve(g)
             if abs(m) == 1: x[i_0:] += dW           
@@ -414,8 +413,8 @@ def main():
             #Checking with a image
             #AStiffpsvp = Stiffpsvp.todense()   
             #scipy.misc.imsave('psvmat.png', 1*(AStiffpsvp != 0.))  
-            Dis[::2]  += -dU 
-            Dis[1::2] += -dV
+            Dis[0::2]  += -dU 
+            Dis[1::2]  += -dV
             
             
             AUX1 = Stiff1[:,i_0:]
@@ -425,26 +424,32 @@ def main():
             
            
             if m==0:
-                pass
+                gpsv[2*i_0:] = np.dot(St_psv_Unp, Dis) 
+                
+                
             if abs(m)==1: 
 		    
                 # Uncomment to solve without using the unpacked matrix
-                #~ gpsv[2*i_0+2:-3:2]=-dV*(AUX3[0,1:-1]+AUX4[1,1:-1]+AUX4[0,2:])
-		#~ gpsv[2*i_0] = -dV*(AUX4[1,0]+AUX4[0,1])
-                #~ gpsv[-2]=-dV*(AUX3[0,-1]+AUX4[1,-1])
-                
-                #~ gpsv[2*i_0+3:-2:2] = -dV*(AUX2[0,1:-1]+AUX2[1,1:-1]+AUX2[0,2:])
-                #~ gpsv[2*i_0+1] = -dV*(AUX2[1,0]+AUX2[0,1])
-                #~ gpsv[-1] = -dV*(AUX2[0,-1]+AUX2[1,-1])
+#                 gpsv[2*i_0+2:-3:2]=-dV*(AUX3[0,1:-1]+AUX4[1,1:-1]+AUX4[0,2:])
+#                 gpsv[2*i_0] = -dV*(AUX4[1,0]+AUX4[0,1])
+#                 gpsv[-2]=-dV*(AUX3[0,-1]+AUX4[1,-1])
+#                
+#                 gpsv[2*i_0+3:-2:2] = -dV*(AUX2[0,1:-1]+AUX2[1,1:-1]+AUX2[0,2:])
+#                 gpsv[2*i_0+1] = -dV*(AUX2[1,0]+AUX2[0,1])
+#                 gpsv[-1] = -dV*(AUX2[0,-1]+AUX2[1,-1])
 #~ #
-#
-	         gpsv[2*i_0::] = np.dot(St_psv_Unp, Dis) 
+                #gpsv[2*i_0:] = np.dot(St_psv_Unp, Dis) 
+                #print ( gpsv != 0).sum() 
+                #print ( g != 0).sum() 
+                  
                  #print np.shape(gpsv[2*i_0+1::2] ), np.shape(np.dot(St_psv_Unp, Dis)[0,1::2] )
             #np.savetxt('gpsv.txt', gpsv[2*i_0::].view(float).reshape(-1, 2))
-	   ####  Excitations coeff       
+	   ####  Excitations coeff  
+               
             if m == 0:
-                gpsv[2*i_0-2] = -dSv
-                gpsv[2*i_0-1] = -dRu
+                gpsv[2*i_0-1] = -dSv
+                gpsv[2*i_0-2] = -dRu
+                
             if abs(m) == 2:        
                 gpsv[2*i_0-1] = -dSv
 
@@ -456,11 +461,11 @@ def main():
             
         
             #print gpsv[2*i_0-1:] 
-            #print g[i_0-1:]    
+            #print g[i_0-1:]   
             #Compute the relative error at surface:
-            erroru  = np.absolute(U0[-1]-xpsv[-2])/np.absolute(U0[-1]) * 100.
-            errorv  = np.absolute(V0[-1]-xpsv[-1])/np.absolute(V0[-1]) * 100.
-            errorw  = np.absolute(W0[-1]-x[-1])/np.absolute(W0[-1]) * 100.
+            erroru  = np.absolute((U0[-1]-xpsv[-2])/U0[-1]) * 100.
+            errorv  = np.absolute((V0[-1]-xpsv[-1])/V0[-1]) * 100.
+            errorw  = np.absolute((W0[-1]-x[-1])/W0[-1]) * 100.
             ERRORu[len(ERRORu):] = [erroru]
             ERRORv[len(ERRORv):] = [errorv]
             ERRORw[len(ERRORw):] = [errorw]
@@ -480,35 +485,35 @@ def main():
         
         
         
-        pl.figure()
-        pl.plot(r,W0.real, label= "THEO")
-        pl.plot(r,W0.imag+1.e-9, label= "THEO")
-        pl.plot(rg[1:],x.real,label= "DSM")
-        pl.plot(rg[1:],x.imag+1.e-9,label= "DSM")  
-        pl.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=1,\
-                  ncol=2, mode="expand", borderaxespad=0.)
-        pl.title(Label+ "W")
-        
-        
-        pl.figure()
-        pl.plot(r,U0.real, label= "THEO")
-        pl.plot(r,U0.imag+1.e-9, label= "THEO")
-        pl.plot(rg[1:],xpsv.real[::2],label= "DSM")
-        pl.plot(rg[1:],xpsv.imag[::2]+1.e-9,label= "DSM")
-        pl.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=1,\
-                  ncol=2, mode="expand", borderaxespad=0.)
-        pl.title(Label+ "U")
-        
-                
-        
-        pl.figure()
-        pl.plot(r,V0.real, label= "THEO")
-        pl.plot(r,V0.imag+1.e-9, label= "THEO")
-        pl.plot(rg[1:],xpsv.real[1::2],label= "DSM")
-        pl.plot(rg[1:],xpsv.imag[1::2]+1.e-9,label= "DSM")
-        pl.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=1,\
-                  ncol=2, mode="expand", borderaxespad=0.)
-        pl.title(Label+ "V")
+    pl.figure()
+    pl.plot(r,W0.real, label= "THEO")
+    pl.plot(r,W0.imag+1.e-9, label= "THEO")
+    pl.plot(rg[1:],x.real,label= "DSM")
+    pl.plot(rg[1:],x.imag+1.e-9,label= "DSM")  
+    pl.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=1,\
+              ncol=2, mode="expand", borderaxespad=0.)
+    pl.title(Label+ "W")
+    
+    
+    pl.figure()
+    pl.plot(r,U0.real, label= "THEO")
+    pl.plot(r,U0.imag+1.e-9, label= "THEO")
+    pl.plot(rg[1:],xpsv.real[::2],label= "DSM")
+    pl.plot(rg[1:],xpsv.imag[::2]+1.e-9,label= "DSM")
+    pl.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=1,\
+              ncol=2, mode="expand", borderaxespad=0.)
+    pl.title(Label+ "U")
+    
+            
+    
+    pl.figure()
+    pl.plot(r,V0.real, label= "THEO")
+    pl.plot(r,V0.imag+1.e-9, label= "THEO")
+    pl.plot(rg[1:],xpsv.real[1::2],label= "DSM")
+    pl.plot(rg[1:],xpsv.imag[1::2]+1.e-9,label= "DSM")
+    pl.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=1,\
+              ncol=2, mode="expand", borderaxespad=0.)
+    pl.title(Label+ "V")
     print ERRORu, ERRORv, ERRORw
 
     pl.show()
