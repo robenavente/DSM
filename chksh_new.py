@@ -76,8 +76,8 @@ mu_src = rho*beta*beta
 #PERIOD = [100.]#Vector with the periods
 PERIOD = np.arange(10,1000,100) #Vector with the periods
 
-L      = [1] #, 50, 75, 100] #Vector with l
-m      = 1
+L      = [100] #, 50, 75, 100] #Vector with l
+m      = 2
 r_src  = 6321 
 
 #Theoretical solution's variables
@@ -110,6 +110,7 @@ ipl = 1
 ###
 
 for l in L:
+    LL=np.sqrt(l*(l+1))
     
     ERROR0  = []   # Resetting the vector with the errors
     ERROR1  = []   # Resetting the vector with the errors
@@ -168,7 +169,8 @@ for l in L:
         # Linear system for boundary conditions at source depth adn surface
         #              below source     above source
         A = np.array([[  -j_src ,        j_src,          y_src],\
-                      [ -jp_src ,       jp_src,          yp_src],\
+                      #[ -jp_src ,       jp_src,          yp_src],\
+                      [ j_src/r_src-jp_src+0j ,     jp_src-j_src/r_src+0j,    yp_src-y_src/r_src+0j],\
                       [  0.+0j  , jp_srf-j_srf/r_srf,    yp_srf-y_srf/r_srf]])
                     
         # Set boundary condition terms - why is there and r_src**2 here?              
