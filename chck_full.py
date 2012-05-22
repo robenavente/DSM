@@ -41,7 +41,7 @@ def main():
     #PERIOD = np.arange(10,100,1) #Vector with the periods
     L = [75]
     #L      = [10, 50, 75, 100] #Vector with l
-    m      = 1
+    m      = 1    
     r_0  = 6321
 
     #Theoretical solution's variables
@@ -402,12 +402,15 @@ def main():
             
             lupsv =  linalg.splu(Stiffpsv_csc)
             gpsv =  np.zeros((2*ncol),complex)
-            Dis =   np.zeros((2*(ncol-i_0)),complex)
+            #Dis =   np.zeros((2*(ncol-i_0)),complex)
+            Dis =   np.zeros((2*(ncol-i_0)+2),complex)
             ###Discontinuities in the displecements
 
-            Ind =(Stiffpsv_ij[0,:] >= 2*i_0) * (Stiffpsv_ij[1,:] >= 2*i_0)
+            #Ind =(Stiffpsv_ij[0,:] >= 2*i_0) * (Stiffpsv_ij[1,:] >= 2*i_0)
+            Ind =(Stiffpsv_ij[0,:] >= 2*i_0-2) * (Stiffpsv_ij[1,:] >= 2*i_0-2)
             Ind = np.nonzero(Ind)[0]
-            Stiffsvp_up = csc_matrix((Stiffpsv_data[Ind],Stiffpsv_ij[:,Ind]-2*i_0)) 
+            #Stiffsvp_up = csc_matrix((Stiffpsv_data[Ind],Stiffpsv_ij[:,Ind]-2*i_0-2)) 
+            Stiffsvp_up = csc_matrix((Stiffpsv_data[Ind],Stiffpsv_ij[:,Ind]-2*i_0-2)) 
             St_psv_Unp = Stiffsvp_up.todense()  
             #print St_psv_Unp[-2,-1]
             #Checking with a image
@@ -427,7 +430,8 @@ def main():
                 gpsv[2*i_0:] = np.dot(St_psv_Unp, Dis) 
                 
                 
-            if abs(m)==1: 
+            if abs(m)==1:
+                
 		    
                 # Uncomment to solve without using the unpacked matrix
 #                 gpsv[2*i_0+2:-3:2]=-dV*(AUX3[0,1:-1]+AUX4[1,1:-1]+AUX4[0,2:])
@@ -438,7 +442,7 @@ def main():
 #                 gpsv[2*i_0+1] = -dV*(AUX2[1,0]+AUX2[0,1])
 #                 gpsv[-1] = -dV*(AUX2[0,-1]+AUX2[1,-1])
 #~ #
-                #gpsv[2*i_0:] = np.dot(St_psv_Unp, Dis) 
+               gpsv[2*i_0:] = np.dot(St_psv_Unp, Dis) 
                 #print ( gpsv != 0).sum() 
                 #print ( g != 0).sum() 
                   

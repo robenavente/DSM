@@ -28,10 +28,10 @@ mu     = rho*beta*beta
 mu_src = rho*beta*beta     
 
 
-#PERIOD = [100.]#Vector with the periods
-PERIOD = np.arange(10,100,1) #Vector with the periods
+PERIOD = [100.]#Vector with the periods
+#PERIOD = np.arange(10,100,1) #Vector with the periods
 
-L      = [10, 50, 75, 100] #Vector with l
+L      = [ 75] #Vector with l
 m      = 1
 r_src  = 6321 
 
